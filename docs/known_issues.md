@@ -99,3 +99,10 @@ Symptom: infer p50 192 ms but p99 376 ms / max 476 ms; gate 1 saw 16 of 195 fram
 Root cause: CARLA rendering and Apollo control share the GPU with TRT inference; the tail frames line up with CARLA render load.
 Mitigation: gate 1 judges the median plus an outlier budget instead of every frame; the tail is quantified in the README gate 3 row and in run/gate1.json soft_warnings.
 Status: quantified and documented, not a defect.
+
+## Control mainboard leaks memory when left serving
+
+Symptom: after the gates finish, the closed loop kept idling on the laptop; ~40 minutes later the control mainboard process sat at 13.5 G resident, 17 G of swap was in use, and the OS started killing unrelated background tasks.
+Root cause: the refined-MPC path allocates per planning cycle and does not release it - the resident set grows with continuous /apollo/planning traffic. The exact allocation site inside the control module is not pinned down.
+Mitigation: do not leave the closed loop idling; tear the stack down after measurement windows, or restart control (stage 4) for long sessions. Defunct mainboard zombies may linger inside the container after a kill; they hold no memory and clear on container restart.
+Status: open, workaround documented (leak only shows under continuous traffic, so the staged-gate measurement flow is unaffected).
