@@ -106,3 +106,17 @@ Symptom: after the gates finish, the closed loop kept idling on the laptop; ~40 
 Root cause: the refined-MPC path allocates per planning cycle and does not release it - the resident set grows with continuous /apollo/planning traffic. The exact allocation site inside the control module is not pinned down.
 Mitigation: do not leave the closed loop idling; tear the stack down after measurement windows, or restart control (stage 4) for long sessions. Defunct mainboard zombies may linger inside the container after a kill; they hold no memory and clear on container restart.
 Status: open, workaround documented (leak only shows under continuous traffic, so the staged-gate measurement flow is unaffected).
+
+## TRT plugins must be registered before engine deserialization
+
+Symptom: head/map/plan engines fail to deserialize with "plugin (DeformableAggregationPlugin) not found" even though libplugins.so exists.
+Root cause: TensorRT resolves custom plugins at engine deserialization time, so the shared library must already be loaded; a `ctypes.CDLL` after `import tensorrt` in the same process is too late in some load orders.
+Fix: sparsedrive_live_service.py loads the plugin with `ctypes.CDLL(PLUGIN, mode=ctypes.RTLD_GLOBAL)` before importing tensorrt (plus `trt.init_libnvinfer_plugins`); vad_live_service.py follows the same order.
+Status: closed (load order fixed in both services).
+
+## Latency CSV appends across service runs
+
+Symptom: gate 3 summary over run/<model>_latency.csv reports a frame count larger than the last measurement window, or mixes runs after a rerun.
+Root cause: the model services open the CSV in append mode, and measure_latency.py folds the whole file; rows from earlier service runs stay in the file.
+Fix/usage: delete (or rotate) run/<model>_latency.csv before a run whose gate 3 numbers must cover exactly that run; the recorded numbers here come from a single fresh run with the loop serving continuously from stage 5 through stage 8.
+Status: semantics documented.

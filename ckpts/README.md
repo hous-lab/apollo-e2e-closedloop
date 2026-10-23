@@ -33,6 +33,34 @@ export VAD_PLUGIN=/path/to/vad-trt-edge/plugins/build/libplugins.so
 # export VAD_BB_ENGINE=backbone_int8.engine VAD_HD_ENGINE=head_int8_fixed.engine
 ```
 
+## SparseDriveV2 engines
+
+Same policy: no engines in this repo. The SparseDriveV2 artifacts come from
+[hous-lab/sparsedrive-trt-edge](https://github.com/hous-lab/sparsedrive-trt-edge)
+(its own ckpts/README.md carries the upstream checkpoint and anchor-file
+policy). x86 fp16 cascade, TensorRT 10.x:
+
+| File | Role |
+|---|---|
+| `backbone_fp16.engine` | image backbone, img [6,3,384,704] |
+| `head_fp16.engine` | detection head (needs `libplugins.so`) |
+| `map_fp16.engine` | map head (needs `libplugins.so`) |
+| `motion_plan_fp16.engine` | motion planning (needs `libplugins.so`) |
+| demo npz `anchor_embed` | deploy-side constant bank passed to the plan engine |
+
+The plan engine's `det_anchor_embed` input is a deploy-side constant (the
+`anchor_embed` key of the sparsedrive-trt-edge demo npz). Point the loop at it:
+
+```
+export SPARSEDRIVE_ENGINES_DIR=/path/to/sparsedrive-trt-edge/x86/trt_compile/fp16/output
+export SPARSEDRIVE_PLUGIN=/path/to/sparsedrive-trt-edge/plugins/build/libplugins.so
+export SPARSEDRIVE_ANCHOR_NPZ=/path/to/sparsedrive-trt-edge/data/demo_data/sample0.npz
+```
+
+The upstream SparseDriveV2 checkpoint and its anchor/statistics files follow the
+same download-only policy (see sparsedrive-trt-edge `ckpts/README.md`); this
+repo ships none of them.
+
 Default pair = INT8 backbone + FP16 head (best x86 config in the vad-trt-edge
 README: L2(1s) 0.7828 @ 88.9 ms). The upstream VAD checkpoint (Bench2Drive
 release) is download-only per the vad-trt-edge `ckpts/README.md` policy - it is

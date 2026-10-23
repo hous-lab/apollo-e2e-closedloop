@@ -2,7 +2,7 @@
 
 Drive a CARLA-simulated vehicle with an end-to-end planning model inside Apollo, closed-loop: the model sees the CARLA surround-view cameras, publishes its plan as ADCTrajectory on /apollo/planning, and the Apollo control module steers the CARLA ego from that plan.
 
-The project demonstrates the integration of TensorRT-quantized end-to-end driving models into the Apollo CyberRT stack, with a model-agnostic relay so the model runs outside the Apollo container (host TensorRT 10.x) while everything Apollo-side stays stock except a small control overlay. VAD is integrated and validated; SparseDrive is the next model on the same toolchain (insertion checklist in docs/model_contract.md).
+The project demonstrates the integration of TensorRT-quantized end-to-end driving models into the Apollo CyberRT stack, with a model-agnostic relay so the model runs outside the Apollo container (host TensorRT 10.x) while everything Apollo-side stays stock except a small control overlay. Two models are integrated and validated closed-loop: VAD and SparseDriveV2. The relay, bridge, control overlay, and bring-up stages are model-agnostic - a new model adds a host-side service plus engine pointers (docs/model_contract.md is the insertion contract).
 
 ## Results
 
@@ -16,12 +16,22 @@ Measured on the validation host (RTX 4090 Laptop GPU, 32G RAM), CAM_PROFILE=6cam
 
 Earlier GPU-server (RTX A6000) closed-loop reference: ~130 m driven at sustained 0.33-0.66 m/s under real throttle, production 6cam 800x600 profile.
 
+### SparseDriveV2 on the same host, same loop, same windows
+
+Measured in the same session, CAM_PROFILE=6cam-lowres, 4-engine fp16 cascade (backbone + head + map + motion_plan, see ckpts/README.md). GATE1_WINDOW=60 (the four-engine load takes about a minute):
+
+| metric | value | source |
+|---|---|---|
+| gate 1 (waypoint sanity, 60 s) | PASS - 802 frames, plan extent <= 3.05 m, infer p50 70 ms | run/gate1.json |
+| gate 2 (closed loop, 300 s window) | PASS - net displacement 7.3 m, max speed 4.2 m/s, 0 watchdog restarts | run/gate2.json |
+| gate 3 (latency, n=5649) | p50 74.9 ms, p90 78.1 ms, p99 130 ms, plan rate 13.35 Hz; GPU SM util 34.1% | run/latency_summary.json |
+
 ## Architecture in one screen
 
 ```
 CARLA 0.9.15 -> bridge (Apollo dev container) -> relay (CyberRT <-> TCP msgpack)
                                                      | 127.0.0.1:9101
-             host vad_live_service.py (TRT engines) <-
+             host model service (vad / sparsedrive, TRT engines) <-
              ADCTrajectory -> /apollo/planning -> refined MPC -> ControlCommand -> CARLA ego
 ```
 
@@ -31,7 +41,7 @@ Full data path, design rationale, and the per-component log table: docs/architec
 
 1. Get the prerequisites: CARLA 0.9.15, the Apollo v8 dev docker image, an Apollo v8.0.0 source tree, and the VAD TensorRT engines + plugin (download table in ckpts/README.md).
 2. Fill scripts/env.sh inputs via environment variables (CARLA_ROOT, APOLLO_SRC, VAD_ENGINES_DIR, VAD_PLUGIN, conda env names); check_env.sh verifies every row and prints fix pointers on miss.
-3. Bring the whole loop up in numbered stages with per-stage logs and fail-fast: scripts/run_bringup.sh (flags --from-stage/--to-stage; RUN_SKIP_BUILD=1 skips the long control build on rerun).
+3. Bring the whole loop up in numbered stages with per-stage logs and fail-fast: scripts/run_bringup.sh (flags --from-stage/--to-stage; RUN_SKIP_BUILD=1 skips the long control build on rerun; MODEL=sparsedrive swaps in the SparseDriveV2 service and gate band, models/sparsedrive/README.md).
 4. Watch gate 1/2/3 verdicts land in run/gate1.json, run/gate2.json, run/latency_summary.json.
 
 Stage table, gate definitions, and per-stage troubleshooting: docs/bring_up.md and docs/validation.md.
@@ -45,6 +55,6 @@ The laptop run shares one 32G RAM pool and one GPU across CARLA rendering, Apoll
 - guardstrikelab/carla_apollo_bridge - the CARLA-Apollo bridge this project patches (see NOTICE for the full attribution list)
 - Apollo (Apache-2.0) and CARLA (MIT) - the two stacks being integrated
 - hustvl/VAD - the VAD model; engines are built from it by hous-lab/vad-trt-edge
-- SparseDrive integration (next phase) reuses this toolchain unchanged outside models/sparsedrive/
+- SparseDriveV2 - the second model on this toolchain; engines are built from it by hous-lab/sparsedrive-trt-edge (models/sparsedrive/README.md)
 
 License: Apache-2.0 (see LICENSE and NOTICE).

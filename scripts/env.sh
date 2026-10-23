@@ -48,12 +48,29 @@ VAD_HD_ENGINE="${VAD_HD_ENGINE:-head_withprev_fp16_fixed_v2.engine}"
 VAD_CAM_FALLBACK="${VAD_CAM_FALLBACK:-}"
 
 # --------------------------------------------------------------- Python ----
-# Host conda env with tensorrt 10.x + torch (VAD live service).
+# Host conda env with tensorrt 10.x + torch (live services).
 CONDA_ENV="${CONDA_ENV:-p1bevrc}"
 # Host conda env for host-side CARLA probes (client API only).
 CONDA_ENV_CARLA="${CONDA_ENV_CARLA:-carla_py310}"
 # Conda base dir; auto-discovered when empty.
 CONDA_BASE="${CONDA_BASE:-}"
+
+# --------------------------------------------------------- Model select ----
+# Which host-side model service stage 5 launches: vad | sparsedrive.
+MODEL="${MODEL:-vad}"
+
+# ----------------------------------------------- Model (SparseDrive) -------
+# SparseDriveV2 TRT engines built by hous-lab/sparsedrive-trt-edge (x86 fp16
+# cascade). See models/sparsedrive/README.md for the download pointers.
+SPARSEDRIVE_ENGINES_DIR="${SPARSEDRIVE_ENGINES_DIR:-}"
+SPARSEDRIVE_PLUGIN="${SPARSEDRIVE_PLUGIN:-}"
+SPARSEDRIVE_BB_ENGINE="${SPARSEDRIVE_BB_ENGINE:-backbone_fp16.engine}"
+SPARSEDRIVE_HD_ENGINE="${SPARSEDRIVE_HD_ENGINE:-head_fp16.engine}"
+SPARSEDRIVE_MAP_ENGINE="${SPARSEDRIVE_MAP_ENGINE:-map_fp16.engine}"
+SPARSEDRIVE_PLAN_ENGINE="${SPARSEDRIVE_PLAN_ENGINE:-motion_plan_fp16.engine}"
+# Deploy-side constant banks (demo npz from sparsedrive-trt-edge; 'anchor_embed'
+# key). Link-only pointer in ckpts/README.md - upstream files are never committed.
+SPARSEDRIVE_ANCHOR_NPZ="${SPARSEDRIVE_ANCHOR_NPZ:-}"
 
 # ----------------------------------------------------------------- Loop ----
 # relay <-> model service TCP endpoint. The relay binds it inside the

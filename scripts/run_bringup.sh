@@ -98,10 +98,21 @@ if [ "$FROM" -le 5 ] && [ "$TO" -ge 5 ]; then
         RELAY_CAMS="front_6mm,front_12mm,front_right,back,back_left,back_right"; fi
     run_stage 5 relay docker exec -d -e RELAY_CAMS="$RELAY_CAMS" -e TCP_PORT="$TCP_PORT" \
         "$CONTAINER_NAME" bash -c "$CYBER_PY; python3.8 $CONTAINER_SCRIPTS_DIR/relay_cyber_tcp.py"
-    run_stage 5 vad "$SCRIPT_DIR/start_vad.sh"
-    log "stage 5: gate 1 - collecting ${GATE1_WINDOW}s of waypoints"
+    case "$MODEL" in
+        sparsedrive) run_stage 5 model "$SCRIPT_DIR/start_sparsedrive.sh" ;;
+        *)           run_stage 5 model "$SCRIPT_DIR/start_vad.sh" ;;
+    esac
+    MODEL_LOG="$RUN_DIR/vad_live.log"
+    [ "$MODEL" = "sparsedrive" ] && MODEL_LOG="$RUN_DIR/sparsedrive_live.log"
+    # infer band is engine-dependent: VAD p50 ~130 ms under CARLA contention,
+    # SparseDrive cascade p50 ~16-40 ms (smaller engines, less to copy).
+    case "$MODEL" in
+        sparsedrive) GATE1_BAND="20,200" ;;
+        *)           GATE1_BAND="80,250" ;;
+    esac
+    log "stage 5: gate 1 - collecting ${GATE1_WINDOW}s of waypoints ($MODEL, band $GATE1_BAND ms)"
     run_stage 5 gate1 "$SCRIPT_DIR/check_gate1.py" \
-        --log "$RUN_DIR/vad_live.log" --window "$GATE1_WINDOW" --infer-band 80,250 --radius 50
+        --log "$MODEL_LOG" --window "$GATE1_WINDOW" --infer-band "$GATE1_BAND" --radius 50
 fi
 # ---------------------------------------------------------------- stage 6 --
 if [ "$FROM" -le 6 ] && [ "$TO" -ge 6 ]; then
@@ -163,12 +174,14 @@ PYCHK
 fi
 # ---------------------------------------------------------------- stage 8 --
 if [ "$FROM" -le 8 ] && [ "$TO" -ge 8 ]; then
+    MODEL_CSV="$RUN_DIR/vad_latency.csv"
+    [ "$MODEL" = "sparsedrive" ] && MODEL_CSV="$RUN_DIR/sparsedrive_latency.csv"
     nvidia-smi dmon -s um -d 1 -o TD > "$RUN_DIR/gpu_dmon.log" 2>&1 &
     DMON_PID=$!
-    log "stage 8: gate 3 - sampling GPU for ${GATE3_DMON_S}s while VAD serves live traffic"
+    log "stage 8: gate 3 - sampling GPU for ${GATE3_DMON_S}s while $MODEL serves live traffic"
     sleep "$GATE3_DMON_S"
     kill "$DMON_PID" 2>/dev/null || true
     run_stage 8 latency "$CONDA_BASE/envs/$CONDA_ENV/bin/python" "$SCRIPT_DIR/measure_latency.py" \
-        --csv "$RUN_DIR/vad_latency.csv" --dmon-log "$RUN_DIR/gpu_dmon.log" --out "$RUN_DIR/latency_summary.json"
+        --csv "$MODEL_CSV" --dmon-log "$RUN_DIR/gpu_dmon.log" --out "$RUN_DIR/latency_summary.json"
 fi
 log "bring-up complete: stages $FROM..$TO (evidence in $RUN_DIR/)"

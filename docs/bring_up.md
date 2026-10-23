@@ -13,14 +13,14 @@ Stage table (acceptance = the gate that backs each stage):
 | 2 | refined-MPC overlay + control build (RUN_SKIP_BUILD=1 skips the build) | overlay idempotency check passes, build exits 0 |
 | 3 | CARLA server (RenderOffScreen, Low) | client reaches world within 120 s |
 | 4 | bridge + control + topic probe | probe counts grow: pose > 0 and camera > 0 in 15 s |
-| 5 | relay + VAD service + gate 1 | run/gate1.json verdict PASS |
+| 5 | relay + model service (MODEL env, default vad; MODEL=sparsedrive runs the SparseDriveV2 service) + gate 1 | run/gate1.json verdict PASS |
 | 6 | synthetic trajectory bypass (optional, STAGE6=1) | ego moves under synthetic traj, drive JSON captured |
 | 7 | teleport to a clean spawn + watchdog + gate 2 | run/gate2.json verdict PASS |
 | 8 | gate 3: GPU dmon sample + latency table | run/latency_summary.json produced |
 
 ## Gates
 
-**Gate 1 (waypoint sanity).** run_bringup collects GATE1_WINDOW (default 30 s) of vad_live_service frames from run/vad_live.log and judges: at least 10 frames, every parsed number finite, every waypoint within 50 m of the ego, infer time in a wide soft band (default 80-250 ms; engine-dependent, warnings only). Result: run/gate1.json.
+**Gate 1 (waypoint sanity).** run_bringup collects GATE1_WINDOW (default 30 s) of model-service frames from the run/<model>_live.log line stream and judges: at least 10 frames, every parsed number finite, every waypoint within 50 m of the ego, infer time in a wide soft band (per-model: VAD 80-250 ms, SparseDriveV2 20-200 ms; warnings only). Result: run/gate1.json.
 
 **Gate 2 (closed-loop drive).** After teleporting the ego to a clean spawn, the watchdog arms (fresh restart budget per run) and measure_drive.py subscribes pose/chassis/control for GATE2_WINDOW (default 300 s). PASS needs net displacement > 5 m, max speed >= 0.3 m/s, and watchdog restarts <= WATCHDOG_RESTART_BUDGET (default 3 per WATCHDOG_WINDOW_S). Result: run/gate2.json.
 
@@ -35,5 +35,5 @@ Stage table (acceptance = the gate that backs each stage):
 | stage 2 build errors around vehicle_config include | docs/known_issues.md (include fix regression) |
 | stage 3 CARLA timeout | run/carla.log; also check no stale CARLA process holds the GPU |
 | stage 4 probe counts stuck at 0 | container /home/bridge.log (CARLA connection), /apollo/control.log (control startup) |
-| stage 5 gate 1 frames < 10 | run/vad_live.log for connect/missing-engine messages |
+| stage 5 gate 1 frames < 10 | run/sparsedrive_live.log or run/vad_live.log for connect/missing-engine messages |
 | stage 7 displacement near zero | stage7_watchdog.log for restarts; container control.log for trajectory reception |
