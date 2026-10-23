@@ -1,0 +1,18 @@
+NOTICE
+=====
+
+This repository contains original glue code and orchestration for closed-loop
+co-simulation. It deliberately vendors none of its upstreams: the in-container
+stack is fetched and patched at runtime (Patch+fetch), model weights and
+engines are built in a separate repository, and the simulator is installed
+separately. The components this project builds on:
+
+| Component | Upstream | Upstream license | Where in this repo |
+|---|---|---|---|
+| carla_apollo_bridge (base of the in-container stack) | https://github.com/guardstrikelab/carla_apollo_bridge (pinned b0c2e08) | Apache-2.0 | fetched and patched at setup time; our patch series in patches/bridge/ |
+| carla_apollo_bridge lineage | https://github.com/AuroAi/carla_apollo_bridge (original) | Apache-2.0 | lineage only |
+| carla-apollo co-sim context | https://github.com/casper-auto/carla-apollo | — | lineage/context |
+| Apollo v8.0.0 runtime | https://github.com/ApolloAuto/apollo | Apache-2.0 | runtime container + control module (refined MPC files under patches/apollo/refined_mpc/ derive from the bridge's refined_controller/, see row above) |
+| CARLA 0.9.15 | https://github.com/carla-simulator/carla | MIT | installed separately; not distributed here |
+| TensorRT / CUDA | NVIDIA | Apache-2.0 / NVIDIA software license | inference runtime (host side) |
+| VAD model lineage | https://github.com/hustvl/VAD | Apache-2.0 | model lineage only; engines built by hous-lab/vad-trt-edge |

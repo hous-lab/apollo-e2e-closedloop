@@ -1,0 +1,11 @@
+diff --git a/carla_bridge/config/settings.yaml b/carla_bridge/config/settings.yaml
+index 00b3ff1..4c7ec6d 100755
+--- a/carla_bridge/config/settings.yaml
++++ b/carla_bridge/config/settings.yaml
+@@ -1,5 +1,5 @@
+ carla:
+-  host: '172.17.0.1'
++  host: 127.0.0.1
+   port: 2000
+   timeout: 30
+   passive: False

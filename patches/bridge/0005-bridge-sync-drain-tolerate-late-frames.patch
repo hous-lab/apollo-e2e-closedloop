@@ -1,0 +1,40 @@
+--- a/carla_bridge/sensor/sensor.py
++++ b/carla_bridge/sensor/sensor.py
+@@ -203,6 +203,7 @@
+             or self.next_data_expected_time
+             and self.next_data_expected_time < timestamp
+         ):
++            last = None
+             while True:
+                 try:
+                     carla_sensor_data = self.queue.get(timeout=0.001)
+@@ -218,15 +219,26 @@
+                         self.sensor_data_updated(carla_sensor_data)
+                         return
+                     elif carla_sensor_data.frame < frame:
+-                        pass
++                        # keep the newest stale frame: if the current-tick frame
++                        # has not arrived over the CARLA stream by the time this
++                        # sensor is drained (arrival order depends on image size
++                        # and spawn order), publishing the newest available frame
++                        # beats dropping it (which starves the camera forever)
++                        last = carla_sensor_data
+                         # self.log.info("{}({}): skipping old frame {}, expected {}".format(
+                         #     self.__class__.__name__,
+                         #     self.get_id(),
+                         #     carla_sensor_data.frame,
+                         #     frame))
+                 except queue.Empty:
+-                    #     self.log.info("{}({}): Expected Frame {} not received".format(
+-                    #         self.__class__.__name__, self.get_id(), frame))
++                    if last is not None:
++                        self.write_tf(
++                            trans.carla_transform_to_cyber_pose(
++                                last.transform
++                            ),
++                            timestamp,
++                        )
++                        self.sensor_data_updated(last)
+                     return
+ 
+     def update(self, frame, timestamp):

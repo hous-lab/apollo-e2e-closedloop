@@ -1,0 +1,13 @@
+diff --git a/carla_bridge/core/actor_factory.py b/carla_bridge/core/actor_factory.py
+index 11f3df0..83a4df5 100755
+--- a/carla_bridge/core/actor_factory.py
++++ b/carla_bridge/core/actor_factory.py
+@@ -135,7 +135,7 @@ class ActorFactory(object):
+                 try:
+                     self.actors[actor_id].update(frame_id, timestamp)
+                 except RuntimeError as e:
+-                    self.log.warn("Update actor {}({}) failed: {}".format(
++                    self.log.warning("Update actor {}({}) failed: {}".format(
+                         self.actors[actor_id].__class__.__name__, actor_id, e))
+                     continue
+ 

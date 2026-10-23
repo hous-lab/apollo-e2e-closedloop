@@ -1,0 +1,13 @@
+# Regenerable / machine-local
+run/
+*.engine
+*.onnx
+*.pth
+__pycache__/
+*.pyc
+.omc/
+.claude/
+
+# Fetched upstream bridge clone (created inside the Apollo container by
+# scripts/container_setup.sh; never committed)
+carla_apollo_bridge/

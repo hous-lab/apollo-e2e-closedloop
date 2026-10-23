@@ -1,0 +1,59 @@
+diff --git a/carla_bridge/main.py b/carla_bridge/main.py
+index 52b47fe..4634bb6 100644
+--- a/carla_bridge/main.py
++++ b/carla_bridge/main.py
+@@ -49,6 +49,7 @@ class CarlaCyberBridge(CyberNode):
+         self.log = log
+         self.carla_parameters = params["carla"]
+         self.carla_world = carla_world
++        self.carla_client = None
+ 
+         self.synchronous_mode_update_thread = None
+         self.shutdown = Event()
+@@ -113,18 +114,39 @@ class CarlaCyberBridge(CyberNode):
+                 self._registered_actors.remove(actor)
+         return success
+ 
++    def reconnect_carla(self):
++        import carla
++        client = carla.Client(
++            host=self.carla_parameters["host"], port=self.carla_parameters["port"])
++        client.set_timeout(self.carla_parameters["timeout"])
++        self.carla_client = client
++        self.carla_world = client.get_world()
++        self.log.warning("CARLA client reconnected")
++
+     def _synchronous_mode_update(self):
+         """
+         execution loop for synchronous mode
+         """
++        fail_count = 0
+         while not self.shutdown.is_set():
+-            frame = self.carla_world.tick()
+-
+-            world_snapshot = self.carla_world.get_snapshot()
+-
+-            self.update_clock(world_snapshot.timestamp)
+-            self._update(frame, world_snapshot.timestamp.elapsed_seconds)
+-            self.actor_factory.update_available_objects()
++            try:
++                frame = self.carla_world.tick()
++                world_snapshot = self.carla_world.get_snapshot()
++                self.update_clock(world_snapshot.timestamp)
++                self._update(frame, world_snapshot.timestamp.elapsed_seconds)
++                self.actor_factory.update_available_objects()
++                fail_count = 0
++            except Exception as e:
++                fail_count += 1
++                self.log.error("tick loop error #{}: {}".format(fail_count, e))
++                if fail_count >= 3:
++                    try:
++                        self.log.warning("reconnecting CARLA client...")
++                        self.reconnect_carla()
++                    except Exception as e2:
++                        self.log.error("reconnect failed: {}".format(e2))
++                    fail_count = 0
++                time.sleep(5)
+ 
+     def _update(self, frame_id, timestamp):
+         """
