@@ -26,6 +26,10 @@ Measured in the same session, CAM_PROFILE=6cam-lowres, 4-engine fp16 cascade (ba
 | gate 2 (closed loop, 300 s window) | PASS - net displacement 7.3 m, max speed 4.2 m/s, 0 watchdog restarts | run/gate2.json |
 | gate 3 (latency, n=5649) | p50 74.9 ms, p90 78.1 ms, p99 130 ms, plan rate 13.35 Hz; GPU SM util 34.1% | run/latency_summary.json |
 
+Per-frame inference latency over 5649 consecutive service frames per model (the shorter run's full length): SparseDriveV2 holds a tight ~75 ms band while VAD sits near 200 ms with CARLA-contention spikes. Light curve = raw per-frame values, solid = 100-frame rolling mean; the VAD max (999 ms) is clipped at the 500 ms axis:
+
+![Per-frame inference latency, VAD vs SparseDriveV2](docs/assets/latency_vad_vs_sparsedrive.png)
+
 ## Architecture in one screen
 
 ```
@@ -52,9 +56,9 @@ The laptop run shares one 32G RAM pool and one GPU across CARLA rendering, Apoll
 
 ## Acknowledgements
 
-- guardstrikelab/carla_apollo_bridge - the CARLA-Apollo bridge this project patches (see NOTICE for the full attribution list)
-- Apollo (Apache-2.0) and CARLA (MIT) - the two stacks being integrated
-- hustvl/VAD - the VAD model; engines are built from it by hous-lab/vad-trt-edge
-- SparseDriveV2 - the second model on this toolchain; engines are built from it by hous-lab/sparsedrive-trt-edge (models/sparsedrive/README.md)
+- [guardstrikelab/carla_apollo_bridge](https://github.com/guardstrikelab/carla_apollo_bridge) - the CARLA-Apollo bridge this project patches (see NOTICE for the full attribution list)
+- [Apollo](https://github.com/ApolloAuto/apollo) (Apache-2.0) and [CARLA 0.9.15](https://github.com/carla-simulator/carla/tree/0.9.15) (MIT) - the two stacks being integrated
+- [hustvl/VAD](https://github.com/hustvl/VAD) - the VAD model; engines are built from it by hous-lab/vad-trt-edge
+- [SparseDriveV2](https://github.com/swc-17/SparseDriveV2/tree/bench2drive) - the second model on this toolchain; engines are built from it by hous-lab/sparsedrive-trt-edge (models/sparsedrive/README.md)
 
 License: Apache-2.0 (see LICENSE and NOTICE).
