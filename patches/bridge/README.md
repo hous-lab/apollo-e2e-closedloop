@@ -3,10 +3,10 @@ Bridge patch series
 Five patches against
 [guardstrikelab/carla_apollo_bridge](https://github.com/guardstrikelab/carla_apollo_bridge)
 at the pinned base commit `b0c2e08` ("Update GettingStarted.md").
-`scripts/container_setup.sh` clones the upstream repo at that commit into the
+[scripts/container_setup.sh](../../scripts/container_setup.sh) clones the upstream repo at that commit into the
 Apollo container and applies the series with `git apply` (each
 patch applies cleanly on the pinned base and the closed-loop validation in
-docs/validation.md is run against the full series).
+[docs/validation.md](../../docs/validation.md) is run against the full series).
 
 | Patch | File | What it changes and why |
 |---|---|---|

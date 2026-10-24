@@ -8,7 +8,7 @@ The pipeline uses three sequential gates instead of one big-bang check. Each gat
 |---|---|---|---|
 | 1 waypoint sanity | 5 | frames >= 10 in GATE1_WINDOW; all parsed numbers finite; every waypoint within 50 m of ego; infer inside a per-model soft band (VAD 80-250 ms, SparseDriveV2 20-200 ms; warnings only) | run/gate1.json |
 | 2 closed-loop drive | 7 | net displacement > 5 m, max speed >= 0.3 m/s, watchdog restarts <= budget (default 3 per 10 min) | run/gate2.json (plus run/gate2_drive.json) |
-| 3 latency table | 8 | summary produced; numbers land in the README with device and driver noted | run/latency_summary.json + run/gpu_dmon.log |
+| 3 latency table | 8 | summary produced; numbers land in the [README](../README.md) with device and driver noted | run/latency_summary.json + run/gpu_dmon.log |
 
 For reference, the earlier GPU-server closed-loop runs drove about 130 m under real throttle at sustained 0.33-0.66 m/s. The laptop gate 2 thresholds are set so that a passing laptop run demonstrates the same behavior class, not the same number.
 

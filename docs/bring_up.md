@@ -1,6 +1,6 @@
 # Bring-up guide
 
-scripts/run_bringup.sh is the numbered conductor: it sources scripts/env.sh, runs stages in order, writes one log per stage under run/, and fail-fasts with the log tail on the first failure. Rerun from any stage:
+[scripts/run_bringup.sh](../scripts/run_bringup.sh) is the numbered conductor: it sources [scripts/env.sh](../scripts/env.sh), runs stages in order, writes one log per stage under run/, and fail-fasts with the log tail on the first failure. Rerun from any stage:
 
     scripts/run_bringup.sh --from-stage N [--to-stage M]
 
@@ -31,8 +31,8 @@ Stage table (acceptance = the gate that backs each stage):
 | symptom | where to look |
 |---|---|
 | stage 0 [MISS] rows | the row text - every miss prints its own fix pointer |
-| stage 1 patch apply fails | run/stage1_setup.log + patches/bridge/README.md |
-| stage 2 build errors around vehicle_config include | docs/known_issues.md (include fix regression) |
+| stage 1 patch apply fails | run/stage1_setup.log + [patches/bridge/README.md](../patches/bridge/README.md) |
+| stage 2 build errors around vehicle_config include | [docs/known_issues.md](known_issues.md) (include fix regression) |
 | stage 3 CARLA timeout | run/carla.log; also check no stale CARLA process holds the GPU |
 | stage 4 probe counts stuck at 0 | container /home/bridge.log (CARLA connection), /apollo/control.log (control startup) |
 | stage 5 gate 1 frames < 10 | run/sparsedrive_live.log or run/vad_live.log for connect/missing-engine messages |

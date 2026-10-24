@@ -29,9 +29,9 @@ Honest simplifications, all deliberate and documented: theta and v are constants
 
 ## SparseDriveV2 deltas
 
-Implemented in scripts/sparsedrive_live_service.py (same TCP contract, same world transform, and the same log line format - check_gate1.py needed zero changes; only the gate-1 infer band differs, 20,200 vs 80,250 ms, per engine timing).
+Implemented in [scripts/sparsedrive_live_service.py](../scripts/sparsedrive_live_service.py) (same TCP contract, same world transform, and the same log line format - check_gate1.py needed zero changes; only the gate-1 infer band differs, 20,200 vs 80,250 ms, per engine timing).
 
-1. Engines: 4-engine fp16 cascade from hous-lab/sparsedrive-trt-edge (backbone, head, map, motion_plan) plus libplugins.so and the demo-npz anchor_embed constant bank, wired through the SPARSEDRIVE_* env knobs in scripts/env.sh.
+1. Engines: 4-engine fp16 cascade from hous-lab/sparsedrive-trt-edge (backbone, head, map, motion_plan) plus libplugins.so and the demo-npz anchor_embed constant bank, wired through the SPARSEDRIVE_* env knobs in [scripts/env.sh](../scripts/env.sh).
 2. Camera mapping: bridge camera order [front_6mm, front_12mm(+55 left), front_right(-55), back, back_left, back_right] permutes to the SparseDrive order [FRONT, FRONT_RIGHT, FRONT_LEFT, BACK, BACK_LEFT, BACK_RIGHT] with indices [0, 2, 1, 3, 4, 5]; preprocessing is resize-to-width-704 (aspect kept) + crop-top to 384 rows + ImageNet norm; CAM_FALLBACK=replicate works like the VAD knob.
 3. Motion engine inputs (16): feat_flat [1,6,22440,256], spat_shape [4,2] i32, lvl_start [4] i32, det_cls/reg/instance_feat (head outputs), det_anchor_embed (constant bank), map_cls/instance_feat/anchor_embed (map outputs), projection_mat [6,4,4], image_wh [6,2], tp_near [2] = (0, 3) (lateral, forward), queue_temp_feat/anchor [21,1,901,256] (zeros with slot QL-1 = current frame), period [1,901] = 20. The deployed engine takes no ego_status / command / timestamp / mask inputs - those exist only in the PyTorch reference path.
 4. Decode: argmax over sigmoid(traj_cls [1,1024]) gives row=idx//16 (lateral anchor), col=idx%16 (lon anchor); lat_anchor[row] is a [15,2] path in (lateral, forward) layout with lateral + left; the service converts to ego (x fwd, y left) and samples anchor points 2,4,6,8,10,12 (3-13 m forward) as the 6 output waypoints.

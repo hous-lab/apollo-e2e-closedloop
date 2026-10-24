@@ -1,12 +1,12 @@
 # models/sparsedrive
 
 SparseDriveV2 closed-loop integration. Reuses this pipeline unchanged - the
-relay (`scripts/relay_cyber_tcp.py`) and every orchestration script are
+relay ([scripts/relay_cyber_tcp.py](../../scripts/relay_cyber_tcp.py)) and every orchestration script are
 model-agnostic; SparseDrive adds its host-side service and engine pointers.
 
 ## What runs
 
-`scripts/start_sparsedrive.sh` launches `scripts/sparsedrive_live_service.py`
+[scripts/start_sparsedrive.sh](../../scripts/start_sparsedrive.sh) launches [scripts/sparsedrive_live_service.py](../../scripts/sparsedrive_live_service.py)
 on the host (same conda env as the VAD service). Per frame it runs the 4-engine
 TensorRT cascade from [hous-lab/sparsedrive-trt-edge](https://github.com/hous-lab/sparsedrive-trt-edge)
 (x86 fp16 tier): backbone → head + map → motion plan, then decodes the
@@ -29,7 +29,7 @@ Engine filenames match the sparsedrive-trt-edge x86 fp16 output directory; the
 int8 tier swaps `SPARSEDRIVE_BB_ENGINE`/`SPARSEDRIVE_HD_ENGINE` to the int8
 files (same directory naming).
 
-## Deployed-engine simplifications (see docs/model_contract.md)
+## Deployed-engine simplifications (see [docs/model_contract.md](../../docs/model_contract.md))
 
 - The deployed motion engine takes no ego_status / command / timestamp / mask
   inputs - planning is camera-driven with a fixed target point tp_near=(0, 3)

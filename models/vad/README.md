@@ -2,12 +2,12 @@
 
 VAD end-to-end planner integration for the apollo-e2e-closedloop pipeline.
 
-The VAD-specific runtime is `scripts/vad_live_service.py`; this directory
+The VAD-specific runtime is [scripts/vad_live_service.py](../../scripts/vad_live_service.py); this directory
 documents the model-facing configuration. Everything else in the pipeline
 (CARLA, Apollo container, bridge, relay, control, watchdog) is model-agnostic
 and shared - swapping in another end-to-end model only means adding a
 `models/<name>/` directory and a host-side service that speaks the same
-relay TCP contract (see `docs/model_contract.md`).
+relay TCP contract (see [docs/model_contract.md](../../docs/model_contract.md)).
 
 ## Artifacts
 
@@ -31,4 +31,4 @@ x86 pipeline. Defaults: `VAD_BB_ENGINE=backbone_int8.engine`,
 
 - static camera extrinsics approximated by identity + 2 m forward shift,
   zero can_bus/shift, persistent zero prev-bev, command index fixed to 0 -
-  see `docs/model_contract.md` for the full list and the map to ADCTrajectory.
+  see [docs/model_contract.md](../../docs/model_contract.md) for the full list and the map to ADCTrajectory.
