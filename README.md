@@ -4,6 +4,8 @@ Drive a CARLA-simulated vehicle with an end-to-end planning model inside Apollo,
 
 The project demonstrates the integration of TensorRT-quantized end-to-end driving models into the Apollo CyberRT stack, with a model-agnostic relay so the model runs outside the Apollo container (host TensorRT 10.x) while everything Apollo-side stays stock except a small control overlay. Two models are integrated and validated closed-loop: VAD and SparseDriveV2. The relay, bridge, control overlay, and bring-up stages are model-agnostic - a new model adds a host-side service plus engine pointers ([docs/model_contract.md](docs/model_contract.md) is the insertion contract).
 
+> **Status: Experimental.** Last verified on: RTX 4090 Laptop GPU, driver 580.95.05, Ubuntu 22.04.5 (kernel 6.5.0-45-generic), host service env python 3.8 / TensorRT 10.16.1 / torch 2.0.0+cu118, CARLA 0.9.15, Apollo v8.0.0 dev container. Issues and PRs are welcome; transfer to other GPUs, TRT versions, or power modes must be re-measured, not assumed.
+
 ## Results
 
 Measured on the validation host (RTX 4090 Laptop GPU, 32G RAM), CAM_PROFILE=6cam-lowres, engines backbone_int8 + head_withprev_fp16_fixed_v2 (see [ckpts/README.md](ckpts/README.md)):
@@ -25,6 +27,18 @@ Measured in the same session, CAM_PROFILE=6cam-lowres, 4-engine fp16 cascade (ba
 | gate 1 (waypoint sanity, 60 s) | PASS - 802 frames, plan extent <= 3.05 m, infer p50 70 ms | run/gate1.json |
 | gate 2 (closed loop, 300 s window) | PASS - net displacement 7.3 m, max speed 4.2 m/s, 0 watchdog restarts | run/gate2.json |
 | gate 3 (latency, n=5649) | p50 74.9 ms, p90 78.1 ms, p99 130 ms, plan rate 13.35 Hz; GPU SM util 34.1% | run/latency_summary.json |
+
+> **Measurement metadata** (applies to both tables above)
+>
+> **Hardware** — RTX 4090 Laptop GPU (16G) on a 32G host, stock laptop power management (no GPU clock pinning, no power override).
+>
+> **Software** — driver 580.95.05, Ubuntu 22.04.5 (kernel 6.5.0-45-generic), host service env python 3.8 / TensorRT 10.16.1 / torch 2.0.0+cu118, CARLA 0.9.15, Apollo v8.0.0 dev container, 6 cameras at 640x384 (6cam-lowres).
+>
+> **Measurement** — three serial gates on one shared GPU; warmup frames included, n = all frames in the window; latency = per-frame host-service latency (preprocess + TRT inference + decode), so plan rate = 1000/p50; no end-to-end planning-path latency (planning + MPC + control) is instrumented.
+>
+> **Quality** — all gates PASS in a single session; raw per-frame CSVs in run/ (gitignored); figure windows = 5649 frames per model (VAD tail window of its 18061-frame run, SparseDriveV2 full run); numbers bind to this host and stack.
+
+**Baseline.** There is no stock-PyTorch baseline measured on this laptop. The stock checkpoints' published numbers come from upstream hardware and harnesses, not this one; the only same-code-path references are the earlier RTX A6000 closed-loop runs (different device, production camera profile). Reassembling the stock PyTorch inference stacks on this laptop solely for a same-device comparison was out of scope for this integration project - treat the missing same-device baseline row as a stated limitation, not an omission.
 
 Per-frame inference latency over 5649 consecutive service frames per model (the shorter run's full length): SparseDriveV2 holds a tight ~75 ms band while VAD sits near 200 ms with CARLA-contention spikes. Light curve = raw per-frame values, solid = 100-frame rolling mean; the VAD max (999 ms) is clipped at the 500 ms axis:
 
@@ -53,6 +67,8 @@ Stage table, gate definitions, and per-stage troubleshooting: [docs/bring_up.md]
 ## Hardware honesty
 
 The laptop run shares one 32G RAM pool and one GPU across CARLA rendering, Apollo control, and TRT inference. It works with the defaults (6cam-lowres, serial gates, watchdog budget) but is not headroom-rich; on a 32G host keep other GPU/RAM consumers idle during a run. Gate 2's watchdog budget exists precisely because CARLA RenderOffScreen can stall periodically on this class of host - see [docs/known_issues.md](docs/known_issues.md).
+
+**Limitations.** The numbers above are bound to: this single laptop (stock laptop power management - latency varies with thermals and power state), the exact engines named in the results header and [ckpts/README.md](ckpts/README.md), CAM_PROFILE=6cam-lowres, TRT 10.16.1, CARLA 0.9.15 + Apollo v8.0.0 dev container, and the sim clock at ~0.115x real time (a 300 s wall-clock window covers ~35 sim-seconds). Gate 2 thresholds demonstrate the behavior class, not server-class numbers. Transfer to other GPUs, TRT versions, or power modes is untested.
 
 ## Acknowledgements
 

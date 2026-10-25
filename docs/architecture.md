@@ -36,7 +36,7 @@ Two design choices are worth spelling out because they are unusual.
 
 ## Why an MPC overlay instead of an Apollo fork
 
-The stock MPC gains make the vehicle lag the reference hard enough that closed-loop driving stalls, and the controller sources do not compile on Apollo v8.0.0 headers without one include fix. The overlay is three files under [patches/apollo/refined_mpc/](../patches/apollo/refined_mpc/), applied by [scripts/apply_refined_mpc.sh](../scripts/apply_refined_mpc.sh) with a first-time `.orig` backup and byte-compare idempotency:
+Closed-loop runs here all use the overlay; the stock MPC gains were never benchmarked on this pipeline, and "stock gains stall closed-loop driving" is the bridge upstream's stated rationale for shipping this refined controller - treat it as a plausible hypothesis, not our measurement (see the failed-routes section in [known_issues.md](known_issues.md)). Separately, the controller sources do not compile on Apollo v8.0.0 headers without one include fix - that one we did hit in the stage-2 build. The overlay is three files under [patches/apollo/refined_mpc/](../patches/apollo/refined_mpc/), applied by [scripts/apply_refined_mpc.sh](../scripts/apply_refined_mpc.sh) with a first-time `.orig` backup and byte-compare idempotency:
 
 - `modules/control/controller/mpc_controller/mpc_controller.cc` - refined control law (from the bridge upstream, refined_controller lineage)
 - `modules/control/controller/mpc_controller/mpc_controller.h` - same file with one include fix: line 29 points at `modules/common_msgs/config_msgs/vehicle_config.pb.h` (the v8 common_msgs location) instead of the v7-era `modules/common/configs/proto/vehicle_config.pb.h`

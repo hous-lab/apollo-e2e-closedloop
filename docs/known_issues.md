@@ -2,6 +2,16 @@
 
 Field notes from running this pipeline on a single-GPU laptop and a GPU server. Each entry: symptom, root cause, what the pipeline does about it.
 
+**Statement types.** FACT = what we measured, in the named configuration, on the named device/versions; INTERPRETATION = a root-cause claim backed by experiments or source reading; HYPOTHESIS = plausible, not yet verified. Hypotheses are never written in the voice of fact.
+
+## Failed routes (NO-GO)
+
+Routes that were tried or considered and not taken, recorded with evidence and the stop condition; statement types per the legend above.
+
+- **Model service inside the Apollo container - NO-GO (FACT).** The Apollo v8 dev container ships TensorRT 8.x; the engines were built with TRT 10.x, and a TRT 10 engine cannot deserialize in a TRT 8 runtime (measured: deserialization failure, same symptom class as the engine-version entry below). Stop condition: the model service must live where its TRT major version matches the engines - host-side, behind the TCP relay ([docs/architecture.md](architecture.md)).
+- **Stock MPC gains - NOT ATTEMPTED; "stock gains stall closed-loop" is a HYPOTHESIS.** Every closed-loop run in this repo uses the refined-MPC overlay; the stock-gain path was never benchmarked in this pipeline. The overlay (sources + tuned gains) comes from the bridge upstream's refined_controller lineage, whose stated rationale is that stock gains lag the reference hard enough to stall closed-loop driving. We adopt that rationale but have not re-measured stock gains on this 6-waypoint plan, so it stays a hypothesis, not a measured fact. Stop condition: the overlay is the validated path; a stock-gain closed-loop baseline is a documented open item.
+- **Same-device PyTorch baseline - NOT MEASURED (scope, stated limitation).** No stock-PyTorch VAD/SparseDriveV2 baseline was benchmarked on this laptop; see the Baseline note in the [README](../README.md). The in-tree reference is the earlier RTX A6000 closed-loop reference (same code path, different device).
+
 ## CARLA RenderOffScreen hangs periodically
 
 Symptom: the CARLA server stops ticking (camera counts freeze), sometimes after tens of minutes.

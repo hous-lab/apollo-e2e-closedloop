@@ -14,6 +14,17 @@ For reference, the earlier GPU-server closed-loop runs drove about 130 m under r
 
 Measured example, single laptop run (RTX 4090 Laptop GPU), VAD: gate 1 PASS with 195 frames in 30 s, max plan extent (rel0) 2.82 m, infer p50 130 ms; gate 2 PASS with net displacement 8.6 m at max speed 3.1 m/s and zero watchdog restarts; gate 3 over n=18061 frames, p50 192 ms / p99 376 ms, 5.2 Hz plan rate at p50, mean GPU SM util 34.9% in the 60 s sampling window. In the same session under MODEL=sparsedrive: gate 1 PASS with 802 frames in 60 s, rel0 <= 3.05 m, p50 70 ms; gate 2 PASS at 7.3 m / 4.2 m/s, zero restarts; gate 3 over n=5649 frames, p50 74.9 ms / p99 130 ms, 13.35 Hz at p50, SM util 34.1%. The sim clock runs at ~0.115x real time at these settings (2.3 Hz tick x 0.05 s fixed delta), so a 300 s wall-clock window covers about 35 sim-seconds of driving.
 
+## Measurement metadata
+
+Applies to the measured example above and the README tables - values are the session that produced the published numbers:
+
+| field | value |
+|---|---|
+| hardware | RTX 4090 Laptop GPU (16G) on a 32G-RAM laptop; stock laptop power management - no GPU clock pinning, no power override |
+| software | driver 580.95.05, Ubuntu 22.04.5 (kernel 6.5.0-45-generic); host service env python 3.8.20 / TensorRT 10.16.1.11 / torch 2.0.0+cu118; CARLA 0.9.15; Apollo v8.0.0 dev container; cameras 6x 640x384 (6cam-lowres) |
+| measurement | warmup frames included (n = all frames in the window); latency = per-frame host-service latency (preprocess + TRT inference + decode); plan rate = 1000/p50; percentiles (p50/p90/p99) quoted in tables, mean/max stay in run/latency_summary.json; no end-to-end planning-path latency (planning + MPC + control) is instrumented; gates run serially on one shared GPU; sim clock ~0.115x real time |
+| quality | gates 1/2/3 all PASS in a single session per model; raw evidence (per-frame CSV + JSON summaries) in run/ (gitignored); figure windows: VAD = last 5649 of 18061 frames, SparseDriveV2 = full 5649-frame run; numbers bind to this host and stack |
+
 ## Evidence layout
 
 After a full bring-up, run/ holds the whole audit trail:
